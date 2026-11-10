@@ -416,7 +416,7 @@ class GameController extends KeyAdapter {
         }
 
         model.gateX -= model.gateSpeed;
-        if (model.gateX <= model.PLAYER_X + 60 && model.gateX + 80 >= model.PLAYER_X) {
+        if (model.gateX <= model.PLAYER_X + 256 && model.gateX + 144 >= model.PLAYER_X) {
             model.evaluatePassage();
         }
         
@@ -445,6 +445,7 @@ class GameView extends JPanel {
     }
     
     private void loadAssets() {
+        System.out.println("Working directory: " + System.getProperty("user.dir"));
         bgImage = new ImageIcon("background.png").getImage();
         for (int i = 1; i <= 9; i++) {
             String fileName = (i == 1) ? "Plane1Idle1.gif" : "Plane" + i + "Idle.gif";
@@ -550,8 +551,16 @@ class GameView extends JPanel {
         int px = model.PLAYER_X;
         int py = model.LANE_Y[model.player.lane];
         
-        if (planeAvatars[model.player.avatarId - 1] != null) {
-            g2d.drawImage(planeAvatars[model.player.avatarId - 1], px, py - 40, 80, 80, this);
+        Image sprite = planeAvatars[model.player.avatarId - 1];
+
+        if (sprite != null && sprite.getWidth(this) > 0 && sprite.getHeight(this) > 0) {
+            int width = sprite.getWidth(this);
+            int height = sprite.getHeight(this);
+            double scale = Math.min(256.0 / width, 144.0 / height);
+            int drawWidth = (int)(width * scale);
+            int drawHeight = (int)(height * scale);
+
+            g2d.drawImage(sprite, px, py - drawHeight / 2, drawWidth, drawHeight, this);
         } else {
             g2d.setColor(Color.BLUE);
             g2d.fillRect(px, py - 20, 40, 40);
