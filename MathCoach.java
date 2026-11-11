@@ -93,6 +93,8 @@ class PlayerEntity {
     public int avatarId;
     public double visualY;
     public int animationDirection = 0;
+    public int animationFrame = 0;
+    public int animationTick = 0;
 
     public double startY = 150;
     public double targetY = 150;
@@ -361,7 +363,7 @@ class GameController extends KeyAdapter {
                 int mod = (key == KeyEvent.VK_RIGHT) ? 1 : -1;
                 if (model.menuSelection == 0) model.difficulty = Math.max(1, Math.min(5, model.difficulty + mod));
                 if (model.menuSelection == 1) model.gateSpeed = Math.max(1.0, Math.min(10.0, model.gateSpeed + (mod * 0.5)));
-                if (model.menuSelection == 2) model.avatarId = Math.max(1, Math.min(9, model.avatarId + mod));
+                if (model.menuSelection == 2) model.avatarId = Math.max(1, Math.min(10, model.avatarId + mod));
                 if (model.menuSelection == 3) model.qLimit = Math.max(0, model.qLimit + (mod * 5));
                 if (model.menuSelection == 4) model.tLimit = Math.max(0, model.tLimit + (mod * 30));
             }
@@ -379,6 +381,8 @@ class GameController extends KeyAdapter {
                 model.player.targetY = model.LANE_Y[model.player.lane];
                 model.player.transitionProgress = 0.0;
                 model.player.animationDirection = -1;
+                model.player.animationFrame = 0;
+                model.player.animationTick = 0;
             }
 
             if (key == KeyEvent.VK_DOWN && model.player.lane < 3) {
@@ -387,6 +391,8 @@ class GameController extends KeyAdapter {
                 model.player.targetY = model.LANE_Y[model.player.lane];
                 model.player.transitionProgress = 0.0;
                 model.player.animationDirection = 1;
+                model.player.animationFrame = 0;
+                model.player.animationTick = 0;
             }
 
             if (key == KeyEvent.VK_ESCAPE) {
@@ -430,6 +436,13 @@ class GameController extends KeyAdapter {
     private void updateGame() {
         if (model.state != GameState.PLAYING) return;
 
+        model.player.animationTick++;
+
+        if (model.player.animationTick >= 8) {
+            model.player.animationTick = 0;
+            model.player.animationFrame = (model.player.animationFrame + 1) % 2;
+        }
+
         if (model.player.transitionProgress < 1.0) {
             model.player.transitionProgress = Math.min(1.0, model.player.transitionProgress + 0.06);
 
@@ -471,9 +484,9 @@ class GameController extends KeyAdapter {
 class GameView extends JPanel {
     private GameModel model;
     private Image bgImage;
-    private Image[] planeAvatars = new Image[9];
-    private Image[] planeUpAvatars = new Image[9];
-    private Image[] planeDownAvatars = new Image[9];
+    private Image[][] planeAvatars = new Image[10][2];
+    private Image[][] planeUpAvatars = new Image[10][2];
+    private Image[][] planeDownAvatars = new Image[10][2];
 
     public GameView(GameModel model, GameController controller) {
         this.model = model;
@@ -487,14 +500,14 @@ class GameView extends JPanel {
     
     private void loadAssets() {
         System.out.println("Working directory: " + System.getProperty("user.dir"));
-        bgImage = new ImageIcon("background.png").getImage();
+        bgImage = new ImageIcon("sprites/background.png").getImage();
 
-        for (int i = 1; i <= 9; i++) {
-            String fileName = (i == 1) ? "Plane1Idle1.gif" : "Plane" + i + "Idle.gif";
-
-            planeAvatars[i - 1] = new ImageIcon(fileName).getImage();
-            planeUpAvatars[i - 1] = new ImageIcon("Plane" + i + "Up.gif").getImage();
-            planeDownAvatars[i - 1] = new ImageIcon("Plane" + i + "Down.gif").getImage();
+        for (int i = 1; i <= 10; i++) {
+            for (int frame = 1; frame <= 2; frame++) {
+                planeAvatars[i - 1][frame - 1] = new ImageIcon("sprites/Plane" + i + "Idle" + frame + ".png").getImage();
+                planeUpAvatars[i - 1][frame - 1] = new ImageIcon("sprites/Plane" + i + "Up" + frame + ".png").getImage();
+                planeDownAvatars[i - 1][frame - 1] = new ImageIcon("sprites/Plane" + i + "Down" + frame + ".png").getImage();
+            }
         }
     }
 
@@ -568,7 +581,7 @@ class GameView extends JPanel {
             g2d.drawString(values[i], 430, 160 + (i * 60));
         }
         
-        Image sprite = planeAvatars[model.avatarId - 1];
+        Image sprite = planeAvatars[model.avatarId - 1][0];
 
         if (sprite != null && sprite.getWidth(this) > 0 && sprite.getHeight(this) > 0) {
             int width = sprite.getWidth(this);
@@ -606,12 +619,15 @@ class GameView extends JPanel {
         int px = model.PLAYER_X;
         int py = (int) model.player.visualY;
         
-        Image sprite = planeAvatars[model.player.avatarId - 1];
+        int avatarIndex = model.player.avatarId - 1;
+        int frame = model.player.animationFrame;
+
+        Image sprite = planeAvatars[avatarIndex][frame];
 
         if (model.player.animationDirection == -1) {
-            sprite = planeUpAvatars[model.player.avatarId - 1];
+            sprite = planeUpAvatars[avatarIndex][frame];
         } else if (model.player.animationDirection == 1) {
-            sprite = planeDownAvatars[model.player.avatarId - 1];
+            sprite = planeDownAvatars[avatarIndex][frame];
         }
 
         if (sprite != null && sprite.getWidth(this) > 0 && sprite.getHeight(this) > 0) {
